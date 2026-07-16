@@ -50,13 +50,13 @@ This directory contains the Arduino source code, hardware connections, and docum
 
 ### Complete Bot
 
-![FarmTrack V3](Images/Top_View.jpg)
+![FarmTrack V3](Images/Top_View.jpeg)
 
 ---
 
 ### Electronics Layout
 
-![Electronics](Images/Closeup_Circuit.jpg)
+![Electronics](Images/Closeup_Circuit.jpeg)
 
 ---
 
