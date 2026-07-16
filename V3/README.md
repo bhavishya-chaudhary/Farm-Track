@@ -84,14 +84,16 @@ If receiver communication is lost for more than 500 ms, the failsafe immediately
 
 The controller reads six PWM channels from the FlySky receiver using the following mapping.
 
-| Receiver Channel | Arduino Pin | Transmitter Control | Function |
-|------------------|-------------|---------------------|----------|
-| CH1 | A0 | VR-B | Auxiliary Control |
-| CH2 | A1 | VR-A | Auxiliary Control |
-| CH3 | A2 | Left Stick (Horizontal) | Steering |
+| Receiver Channel | Arduino Pin | Transmitter Control | Used For |
+|------------------|-------------|---------------------|-----------|
+| CH1 | A0 | VR-B | Auxiliary input |
+| CH2 | A1 | VR-A | Auxiliary input |
+| CH3 | A2 | Left Stick (Horizontal) | Gripper |
 | CH4 | A3 | Left Stick (Vertical) | Throttle |
 | CH5 | A4 | Right Stick (Vertical) | Arm |
-| CH6 | A5 | Right Stick (Horizontal) | Gripper |
+| CH6 | A5 | Right Stick (Horizontal) | Steering |
+
+The firmware assigns each receiver channel to a specific robot function, allowing the transmitter layout to remain independent of the control logic.
 
 ---
 

@@ -12,32 +12,9 @@ This repository documents the complete engineering journey across all three vers
 
 | Version | Highlights |
 |---------|------------|
-| **V1** | Initial prototype with wired control, four-wheel differential drive, articulated arm, and parallel jaw gripper. |
-| **V2** | Higher torque drivetrain, worm gear mechanisms, improved weight distribution, flexible shaft transmission, smoother speed control, and mechanical optimization. |
-| **V3** | Wireless control, embedded control logic, cleaner wiring, improved system integration, and drivetrain experimentation. |
-
----
-
-## Repository Structure
-
-```
-Farm-Track
-│
-├── README.md
-├── LICENSE
-│
-├── V1
-│   └── README.md
-│
-├── V2
-│   └── README.md
-│
-└── V3
-    ├── README.md
-    ├── CONNECTIONS.md
-    ├── FarmTrack_V3.ino
-    └── Images
-```
+| **[V1](V1/README.md)** | Initial prototype with wired control, four-wheel differential drive, articulated arm, and parallel jaw gripper. |
+| **[V2](V2/README.md)** | Higher torque drivetrain, worm gear mechanisms, improved weight distribution, flexible shaft transmission, smoother speed control, and mechanical optimization. |
+| **[V3](V3/README.md)** | Wireless control, embedded control logic, cleaner wiring, improved system integration, and drivetrain experimentation. |
 
 ---
 
@@ -47,7 +24,7 @@ Farm-Track
 
 The first working prototype focused on building a reliable off-road robot capable of object handling using an articulated arm and gripper. During development, several practical issues such as tyre traction and control smoothness were identified and addressed.
 
-➡️ See **V1/README.md**
+**Documentation:** [V1 README](V1/README.md)
 
 ---
 
@@ -55,7 +32,7 @@ The first working prototype focused on building a reliable off-road robot capabl
 
 The second iteration focused on mechanical improvements. The drivetrain was optimized for higher torque, the arm mechanism was redesigned using a worm-and-wheel drive, the gripper was driven through a flexible shaft, and the overall control became much smoother.
 
-➡️ See **V2/README.md**
+**Documentation:** [V2 README](V2/README.md)
 
 ---
 
@@ -63,7 +40,7 @@ The second iteration focused on mechanical improvements. The drivetrain was opti
 
 The final iteration integrated wireless control, embedded control logic, improved drivetrain performance, cleaner electronics, and a more organized wiring layout.
 
-➡️ See **V3/README.md**
+**Documentation:** [V3 README](V3/README.md)
 
 ---
 

@@ -1,44 +1,80 @@
-// =============================================
-//  Off-Road Robot — Final Build
-//  3-sec raw monitor + per-channel min/max cal
-//  Center = (min+max)/2 — no separate capture
-// =============================================
+/*
+------------------------------------------------------------
+ FarmTrack V3
+------------------------------------------------------------
+
+ Author      : Bhavishya Chaudhary
+ Platform    : Arduino Uno
+ Language    : Arduino C++
+
+ Description:
+ Firmware for the third iteration of the FarmTrack
+ off-road mobile robot.
+
+ Features:
+ - Differential drive control
+ - Wireless control (FlySky CT6B)
+ - EEPROM-based receiver calibration
+ - Automatic failsafe
+ - Quadratic throttle response
+ - Non-linear steering
+ - Calibration mode
+ - Serial debugging
+
+------------------------------------------------------------
+*/
 
 #include <EEPROM.h>
 
-bool DEBUG_ENABLED = true;
+const bool DEBUG_ENABLED = true;
 
-// ============ RECEIVER ============
-const int PIN_STEERING = A5;  // CH1
-const int PIN_ARM      = A4;  // CH2
-const int PIN_THROTTLE = A3;  // CH3
-const int PIN_GRIPPER  = A2;  // CH4
-const int PIN_CH5      = A1;  // CH5
-const int PIN_CH6      = A0;  // CH6
+// --------------------------------------------------------
+// Receiver Inputs
+// --------------------------------------------------------
+//
+// Receiver channel assignments:
+//
+// CH1 -> A0 -> VR-B
+// CH2 -> A1 -> VR-A
+// CH3 -> A2 -> Left Stick (Horizontal)
+// CH4 -> A3 -> Left Stick (Vertical)
+// CH5 -> A4 -> Right Stick (Vertical)
+// CH6 -> A5 -> Right Stick (Horizontal)
 
-// ============ LEFT BTS7960 ============
+const int PIN_STEERING = A5;  // CH6 - Right Stick (Horizontal)
+const int PIN_ARM      = A4;  // CH5 - Right Stick (Vertical)
+const int PIN_THROTTLE = A3;  // CH4 - Left Stick (Vertical)
+const int PIN_GRIPPER  = A2;  // CH3 - Left Stick (Horizontal)
+const int PIN_CH5      = A1;  // CH2 - VR-A
+const int PIN_CH6      = A0;  // CH1 - VR-B
+
+// --------------------------------------------------------
+// Motor Drivers
+// --------------------------------------------------------
+
+// Left BTS7960 Motor Driver
 const int L_RPWM = 6;
 const int L_LPWM = 5;
 
-// ============ RIGHT BTS7960 ============
+// Right BTS7960 Motor Driver
 const int R_RPWM = 10;
 const int R_LPWM = 11;
 
-// ============ L298N ARM ============
+// L298N Arm Motor Driver
 const int ARM_ENA = 9;
 const int ARM_IN1 = 8;
 const int ARM_IN2 = 7;
 
-// ============ L298N GRIPPER ============
+// L298N Gripper Motor Driver
 const int GRP_ENB = 3;
 const int GRP_IN3 = 4;
 const int GRP_IN4 = 2;
 
-// ============ BUTTON & LED ============
+// Button and Status LED pins
 const int PIN_BTN = 12;
 const int PIN_LED = 13;
 
-// ============ SETTINGS ============
+// Calibration and Control thresholds
 const int THR_DEAD     = 15;
 const int STR_DEAD     = 10;
 const int ARM_DEAD     = 20;
@@ -47,18 +83,21 @@ const int ARM_MAX_SPD  = 200;
 const int GRP_MAX_SPD  = 180;
 const int CAL_MARGIN   = 10;
 
+// Timing constants (milliseconds)
 const unsigned long FAILSAFE_MS = 500;
 const unsigned long CAL_TIMEOUT = 30000;
 const unsigned long LONG_PRESS  = 2000;
 const unsigned long BLINK_MS    = 250;
 const unsigned long DEBUG_MS    = 100;
 
-// ============ EEPROM ============
+// --------------------------------------------------------
+// EEPROM
+// --------------------------------------------------------
 const int  EE_MAGIC_ADDR = 0;
 const byte EE_MAGIC      = 0xB6;
 const int  EE_DATA_ADDR  = 1;
 
-// Min/Max only — center computed as (min+max)/2
+// Receiver calibration data
 struct CalData {
   int thrMin, thrMax;
   int strMin, strMax;
@@ -67,7 +106,9 @@ struct CalData {
 };
 CalData cal = {1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000};
 
-// ============ ISR ============
+// --------------------------------------------------------
+// Receiver Processing
+// --------------------------------------------------------
 volatile unsigned long riseThr = 0, riseStr = 0, riseArm = 0, riseGrp = 0;
 volatile unsigned long riseCh5 = 0, riseCh6 = 0;
 volatile int pulseThr = 1500, pulseStr = 1500, pulseArm = 1500, pulseGrp = 1500;
@@ -76,7 +117,7 @@ volatile bool newThr = false, newStr = false, newArm = false, newGrp = false;
 volatile bool newCh5 = false, newCh6 = false;
 volatile uint8_t prevPort = 0;
 
-// ============ STATE ============
+// Runtime state
 enum Mode { RUN, CAL };
 Mode mode = RUN;
 unsigned long sigTime = 0, dbgTime = 0, blinkTime = 0, calStartT = 0;
@@ -84,15 +125,12 @@ unsigned long calPrintTime = 0;
 bool btnDown = false, btnLong = false, calWaitRel = false, ledState = false;
 unsigned long btnTime = 0;
 
-int cThrMin, cThrMax, cStrMin, cStrMax;
 int cArmMin, cArmMax, cGrpMin, cGrpMax;
+int cThrMin, cThrMax, cStrMin, cStrMax;
 
 int rawThr, rawStr, rawArm, rawGrp, rawCh5, rawCh6;
 
-
-// ========================================================
-//  ISR — Port C (all 6 channels)
-// ========================================================
+// Read PWM pulse widths from all receiver channels.
 ISR(PCINT1_vect) {
   uint8_t cur = PINC;
   uint8_t chg = cur ^ prevPort;
@@ -125,11 +163,7 @@ ISR(PCINT1_vect) {
   }
 }
 
-
-// ========================================================
-//  MAP CHANNEL — center = (min+max)/2, each side scales
-//  independently to full ±255
-// ========================================================
+// Map a receiver channel using its calibrated limits.
 int mapChannel(int raw, int cMin, int cMax) {
   int cCtr = (cMin + cMax) / 2;
   int out;
@@ -141,12 +175,9 @@ int mapChannel(int raw, int cMin, int cMax) {
   return constrain(out, -255, 255);
 }
 
-
-// ========================================================
-//  EEPROM
-// ========================================================
+// Print stored calibration values.
 void printCal() {
-  Serial.println(F("Stored cal (min | center | max):"));
+  Serial.println(F("Stored calibration (min | center | max):"));
   int c;
   c = (cal.thrMin + cal.thrMax) / 2;
   Serial.print(F("  THR: ")); Serial.print(cal.thrMin);
@@ -169,6 +200,7 @@ void printCal() {
   Serial.print(F(" | ")); Serial.println(cal.grpMax);
 }
 
+// Load calibration from EEPROM.
 void loadCal() {
   if (EEPROM.read(EE_MAGIC_ADDR) == EE_MAGIC) {
     EEPROM.get(EE_DATA_ADDR, cal);
@@ -179,24 +211,41 @@ void loadCal() {
         cal.thrMax - cal.thrMin < 100 ||
         cal.strMax - cal.strMin < 100) {
       cal = {1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000};
-      if (DEBUG_ENABLED) Serial.println(F("EEPROM invalid — defaults loaded"));
+      if (DEBUG_ENABLED) Serial.println(F("EEPROM data invalid. Defaults loaded."));
     } else {
-      if (DEBUG_ENABLED) Serial.println(F("Calibration loaded from EEPROM"));
+      if (DEBUG_ENABLED) Serial.println(F("Calibration data successfully loaded from EEPROM."));
     }
   } else {
-    if (DEBUG_ENABLED) Serial.println(F("No saved calibration — defaults"));
+    if (DEBUG_ENABLED) Serial.println(F("No saved calibration found. Loading default constants."));
   }
 }
 
+// Save calibration to EEPROM.
 void saveCal() {
   EEPROM.put(EE_MAGIC_ADDR, EE_MAGIC);
   EEPROM.put(EE_DATA_ADDR, cal);
 }
 
+// Read the latest receiver values and update the failsafe timer.
+void readRC(int &thr, int &str, int &arm, int &grp,
+            int &ch5, int &ch6, bool &fail) {
+  noInterrupts();
+  thr = pulseThr;  str = pulseStr;
+  arm = pulseArm;  grp = pulseGrp;
+  ch5 = pulseCh5;  ch6 = pulseCh6;
+  bool got = newThr || newStr || newArm || newGrp || newCh5 || newCh6;
+  newThr = newStr = newArm = newGrp = newCh5 = newCh6 = false;
+  interrupts();
 
-// ========================================================
-//  CALIBRATION — prints progress every second
-// ========================================================
+  if (got) sigTime = millis();
+  fail = (millis() - sigTime > FAILSAFE_MS);
+}
+
+// --------------------------------------------------------
+// Calibration
+// --------------------------------------------------------
+
+// Enter calibration mode.
 void calBegin() {
   mode = CAL;
   calStartT = millis();
@@ -215,11 +264,13 @@ void calBegin() {
   cGrpMin = g; cGrpMax = g;
 
   if (DEBUG_ENABLED) {
-    Serial.println(F(">> CAL START — Move ALL sticks to ALL extremes"));
-    Serial.println(F("   Watch ranges grow below. Press button when done."));
+    Serial.println(F("Calibration mode"));
+    Serial.println(F("Move every transmitter control through its full range."));
+    Serial.println(F("Press the button again to save."));
   }
 }
 
+// Update calibration limits.
 void calUpdate() {
   noInterrupts();
   int t = pulseThr; int s = pulseStr;
@@ -231,7 +282,7 @@ void calUpdate() {
   if (a < cArmMin) cArmMin = a;  if (a > cArmMax) cArmMax = a;
   if (g < cGrpMin) cGrpMin = g;  if (g > cGrpMax) cGrpMax = g;
 
-  // Print progress every second so user can see ranges grow
+  // Print progress dynamically to serial output
   if (DEBUG_ENABLED && millis() - calPrintTime >= 1000) {
     calPrintTime = millis();
     Serial.print(F("  THR:")); Serial.print(cThrMin);
@@ -245,6 +296,7 @@ void calUpdate() {
   }
 }
 
+// Validate and save calibration.
 void calFinish() {
   bool ok = (cThrMax - cThrMin >= 200) && (cStrMax - cStrMin >= 200);
 
@@ -265,14 +317,14 @@ void calFinish() {
 
     saveCal();
     if (DEBUG_ENABLED) {
-      Serial.println(F(">> CAL SAVED"));
+      Serial.println(F("Calibration completed successfully."));
       printCal();
     }
   } else {
     if (DEBUG_ENABLED) {
-      Serial.println(F(">> CAL FAILED — need range >= 200"));
-      Serial.print(F("  THR range: ")); Serial.println(cThrMax - cThrMin);
-      Serial.print(F("  STR range: ")); Serial.println(cStrMax - cStrMin);
+      Serial.println(F("Calibration failed."));
+      Serial.print(F("  Throttle range: ")); Serial.println(cThrMax - cThrMin);
+      Serial.print(F("  Steering range: ")); Serial.println(cStrMax - cStrMin);
     }
   }
 
@@ -281,28 +333,11 @@ void calFinish() {
   btnDown = false;
 }
 
+// --------------------------------------------------------
+// Drive Control
+// --------------------------------------------------------
 
-// ========================================================
-//  READ RECEIVER
-// ========================================================
-void readRC(int &thr, int &str, int &arm, int &grp,
-            int &ch5, int &ch6, bool &fail) {
-  noInterrupts();
-  thr = pulseThr;  str = pulseStr;
-  arm = pulseArm;  grp = pulseGrp;
-  ch5 = pulseCh5;  ch6 = pulseCh6;
-  bool got = newThr || newStr || newArm || newGrp || newCh5 || newCh6;
-  newThr = newStr = newArm = newGrp = newCh5 = newCh6 = false;
-  interrupts();
-
-  if (got) sigTime = millis();
-  fail = (millis() - sigTime > FAILSAFE_MS);
-}
-
-
-// ========================================================
-//  DEADZONE + RAMP
-// ========================================================
+// Apply deadband and scale the remaining stick travel.
 int dzRamp(int val, int dz, int maxOut) {
   if (abs(val) <= dz) return 0;
   int sign = (val > 0) ? 1 : -1;
@@ -310,10 +345,7 @@ int dzRamp(int val, int dz, int maxOut) {
   return constrain(out, 1, maxOut) * sign;
 }
 
-
-// ========================================================
-//  MOTORS
-// ========================================================
+// Differential drive output.
 void driveMotors(int left, int right) {
   left  = constrain(left,  -255, 255);
   right = constrain(right, -255, 255);
@@ -327,6 +359,7 @@ void driveMotors(int left, int right) {
   else                 { analogWrite(R_RPWM, 0);     analogWrite(R_LPWM, 0);       }
 }
 
+// Drive the arm motor.
 void driveArm(int spd) {
   spd = constrain(spd, -ARM_MAX_SPD, ARM_MAX_SPD);
   if (spd > 0) {
@@ -341,6 +374,7 @@ void driveArm(int spd) {
   }
 }
 
+// Drive the gripper motor.
 void driveGripper(int spd) {
   spd = constrain(spd, -GRP_MAX_SPD, GRP_MAX_SPD);
   if (spd > 0) {
@@ -355,6 +389,7 @@ void driveGripper(int spd) {
   }
 }
 
+// Stop functions.
 void stopMotors()  { analogWrite(L_RPWM, 0); analogWrite(L_LPWM, 0);
                      analogWrite(R_RPWM, 0); analogWrite(R_LPWM, 0); }
 void stopArm()     { digitalWrite(ARM_IN1, LOW); digitalWrite(ARM_IN2, LOW);
@@ -363,10 +398,7 @@ void stopGripper() { digitalWrite(GRP_IN3, LOW); digitalWrite(GRP_IN4, LOW);
                      analogWrite(GRP_ENB, 0); }
 void stopAll()     { stopMotors(); stopArm(); stopGripper(); }
 
-
-// ========================================================
-//  BUTTON
-// ========================================================
+// Handle the calibration button.
 void handleButton() {
   bool pressed = (digitalRead(PIN_BTN) == LOW);
   unsigned long now = millis();
@@ -397,16 +429,17 @@ void handleButton() {
       else calFinish();
     }
     if (now - calStartT >= CAL_TIMEOUT) {
-      if (DEBUG_ENABLED) Serial.println(F(">> CAL timeout"));
+      if (DEBUG_ENABLED) Serial.println(F("Calibration timed out."));
       calFinish();
     }
   }
 }
 
+// --------------------------------------------------------
+// Debug Utilities
+// --------------------------------------------------------
 
-// ========================================================
-//  DEBUG — shows mapped>final for each channel + all 6 raw
-// ========================================================
+// Print receiver and motor diagnostics.
 void debugPrint(int mThr, int mStr, int mArm, int mGrp,
                 int thr, int str, int arm, int grip,
                 int lSpd, int rSpd, bool fail) {
@@ -416,7 +449,6 @@ void debugPrint(int mThr, int mStr, int mArm, int mGrp,
 
   if (fail) { Serial.println(F("!!! FAILSAFE !!!")); return; }
 
-  // Format: mapped>afterDZ
   Serial.print(F("T:")); Serial.print(mThr);
   Serial.print(F(">")); Serial.print(thr);
   Serial.print(F(" S:")); Serial.print(mStr);
@@ -437,12 +469,9 @@ void debugPrint(int mThr, int mStr, int mArm, int mGrp,
   Serial.println(F("]"));
 }
 
-
-// ========================================================
-//  STARTUP RAW MONITOR — 3 seconds, move sticks!
-// ========================================================
+// Display raw receiver values during startup.
 void rawMonitor() {
-  Serial.println(F("\n--- RAW MONITOR 3s — MOVE STICKS NOW ---"));
+  Serial.println(F("\nStarting 3-second raw input monitor. Move sticks to verify signal connection..."));
   unsigned long start = millis();
   while (millis() - start < 3000) {
     noInterrupts();
@@ -459,17 +488,19 @@ void rawMonitor() {
     Serial.print(F(" CH6:")); Serial.println(c6);
     delay(200);
   }
-  Serial.println(F("--- END RAW MONITOR ---\n"));
+  Serial.println(F("Raw input monitor complete.\n"));
 }
 
-
-// ========================================================
-//  SETUP
-// ========================================================
+// --------------------------------------------------------
+// System setup
+// --------------------------------------------------------
 void setup() {
   if (DEBUG_ENABLED) {
     Serial.begin(115200);
-    Serial.println(F("=== Robot Starting ==="));
+    Serial.println(F("=========================================="));
+    Serial.println(F(" FarmTrack V3 Controller"));
+    Serial.println(F(" Firmware v1.0"));
+    Serial.println(F("=========================================="));
   }
 
   pinMode(PIN_STEERING, INPUT); pinMode(PIN_ARM, INPUT);
@@ -495,17 +526,22 @@ void setup() {
   digitalWrite(PIN_LED, HIGH);
 
   if (DEBUG_ENABLED) {
-    Serial.println(F("CH1=A5=Str  CH2=A4=Arm  CH3=A3=Thr  CH4=A2=Grp  CH5=A1  CH6=A0"));
+    Serial.println(F("Receiver mapping:"));
+    Serial.println(F("  CH1 (VR-B)                 -> A0"));
+    Serial.println(F("  CH2 (VR-A)                 -> A1"));
+    Serial.println(F("  CH3 (Left Horizontal)      -> A2"));
+    Serial.println(F("  CH4 (Left Vertical)        -> A3"));
+    Serial.println(F("  CH5 (Right Vertical)       -> A4"));
+    Serial.println(F("  CH6 (Right Horizontal)     -> A5"));
     printCal();
     rawMonitor();
-    Serial.println(F("Ready!\n"));
+    Serial.println(F("System ready."));
   }
 }
 
-
-// ========================================================
-//  LOOP
-// ========================================================
+// --------------------------------------------------------
+// Main control loop
+// --------------------------------------------------------
 void loop() {
   handleButton();
 
@@ -524,19 +560,16 @@ void loop() {
     return;
   }
 
-  // Each channel mapped independently with its own min/max
   int mThr = mapChannel(rawThr, cal.thrMin, cal.thrMax);
   int mStr = mapChannel(rawStr, cal.strMin, cal.strMax);
   int mArm = mapChannel(rawArm, cal.armMin, cal.armMax);
   int mGrp = mapChannel(rawGrp, cal.grpMin, cal.grpMax);
 
-  // Deadzone + ramp
   int throttle  = dzRamp(mThr, THR_DEAD, 255);
   int steering  = dzRamp(mStr, STR_DEAD, 255);
   int armSpeed  = dzRamp(mArm, ARM_DEAD, ARM_MAX_SPD);
   int gripSpeed = dzRamp(mGrp, GRP_DEAD, GRP_MAX_SPD);
 
-  // Tank mix
   int leftSpd  = constrain(throttle + steering, -255, 255);
   int rightSpd = constrain(throttle - steering, -255, 255);
 
