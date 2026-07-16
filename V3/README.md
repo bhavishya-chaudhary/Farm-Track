@@ -50,19 +50,13 @@ This directory contains the Arduino source code, hardware connections, and docum
 
 ### Complete Bot
 
-![FarmTrack V3](Images/FarmTrack_V3.jpg)
+![FarmTrack V3](Images/Top_View.jpg)
 
 ---
 
 ### Electronics Layout
 
-![Electronics](Images/Electronics.jpg)
-
----
-
-### Drive Motor Coupling
-
-![Motor Coupling](Images/Motor_Coupling.jpg)
+![Electronics](Images/Closeup_Circuit.jpg)
 
 ---
 

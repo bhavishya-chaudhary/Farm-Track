@@ -8,31 +8,37 @@ The control system is built around an Arduino Uno, which receives six PWM channe
 
 # System Overview
 
-```
-FlySky CT6B Transmitter
-            │
-            ▼
-      FS-iA6B Receiver
-            │
-            ▼
-        Arduino Uno
-      ┌─────┴─────┐
-      │           │
-      ▼           ▼
-  BTS7960      BTS7960
- (Left)        (Right)
-      │           │
-      └─────┬─────┘
-            │
-      Drive Motors
+```mermaid
+flowchart TD
 
-            │
-            ▼
-          L298N
-      ┌─────┴─────┐
-      │           │
-      ▼           ▼
-   Arm Motor   Gripper Motor
+    TX["FlySky CT6B<br/>Transmitter"]
+    RX["FS-iA6B<br/>Receiver"]
+
+    ARD["Arduino Uno"]
+
+    BTS1["BTS7960<br/>Left Drive"]
+    BTS2["BTS7960<br/>Right Drive"]
+
+    L298["L298N<br/>Arm & Gripper"]
+
+    LEFT["Left Drive Motors"]
+    RIGHT["Right Drive Motors"]
+
+    ARM["Arm Motor"]
+    GRIP["Gripper Motor"]
+
+    TX --> RX
+    RX --> ARD
+
+    ARD --> BTS1
+    ARD --> BTS2
+    ARD --> L298
+
+    BTS1 --> LEFT
+    BTS2 --> RIGHT
+
+    L298 --> ARM
+    L298 --> GRIP
 ```
 
 ---
