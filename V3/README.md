@@ -1,6 +1,8 @@
 # FarmTrack V3
 
-![FarmTrack V3](Images/FarmTrack_V3.jpg)
+<p align="center">
+  <img src="Images/Top_View.jpeg" alt="FarmTrack V3" width="650">
+</p>
 
 FarmTrack V3 is the third and final iteration of the Farm-Track project.
 
@@ -50,13 +52,17 @@ This directory contains the Arduino source code, hardware connections, and docum
 
 ### Complete Bot
 
-![FarmTrack V3](Images/Top_View.jpeg)
+<p align="center">
+  <img src="Images/Top_View.jpeg" alt="FarmTrack V3" width="650">
+</p>
 
 ---
 
 ### Electronics Layout
 
-![Electronics](Images/Closeup_Circuit.jpeg)
+<p align="center">
+  <img src="Images/Closeup_Circuit.jpeg" alt="Electronics Layout" width="450">
+</p>
 
 ---
 

@@ -6,6 +6,12 @@ The project began as a simple wired competition bot and gradually evolved into a
 
 This repository documents the complete engineering journey across all three versions.
 
+> **Repository Focus**
+>
+> This repository documents the complete evolution of Farm-Track from V1 to V3. However, its primary focus is **FarmTrack V3**, which represents the final and most complete implementation of the project.
+>
+> V1 and V2 are included to document the engineering journey, design decisions, and mechanical improvements that led to the final version. Since these versions were developed before I began maintaining my projects on GitHub, only their documentation and project history are available. The complete source code, hardware documentation, and implementation details are provided for V3.
+
 ---
 
 ## Project Evolution
@@ -26,6 +32,8 @@ The first working prototype focused on building a reliable off-road robot capabl
 
 **Documentation:** [V1 README](V1/README.md)
 
+*Source code for this version was not preserved.*
+
 ---
 
 ### V2
@@ -34,6 +42,8 @@ The second iteration focused on mechanical improvements. The drivetrain was opti
 
 **Documentation:** [V2 README](V2/README.md)
 
+*Source code for this version was not preserved.*
+
 ---
 
 ### V3
@@ -41,6 +51,8 @@ The second iteration focused on mechanical improvements. The drivetrain was opti
 The final iteration integrated wireless control, embedded control logic, improved drivetrain performance, cleaner electronics, and a more organized wiring layout.
 
 **Documentation:** [V3 README](V3/README.md)
+
+The complete implementation, including source code, hardware documentation, and project images, is available for this version.
 
 ---
 
