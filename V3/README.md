@@ -1,8 +1,10 @@
 # FarmTrack V3
 
+![FarmTrack V3](Images/FarmTrack_V3.jpg)
+
 FarmTrack V3 is the third and final iteration of the Farm-Track project.
 
-This version focused on integrating everything learned from the previous two iterations into a single platform. The primary objectives were higher speed, wireless control, better system integration, cleaner design, and an improved driving experience.
+This version focused on bringing together everything learned from the previous two iterations into a single platform. The primary objectives were higher speed, wireless control, better system integration, cleaner design, and an improved driving experience.
 
 This directory contains the Arduino source code, hardware connections, and documentation for the V3 control system.
 
@@ -36,15 +38,15 @@ This directory contains the Arduino source code, hardware connections, and docum
 | Radio System | FlySky CT6B + FS-iA6B Receiver |
 | Drive Motor Drivers | 2 × BTS7960 |
 | Arm & Gripper Driver | L298N Dual H-Bridge |
-| Drive Motors | 8 × 12V DC geared motors (paired configuration) |
-| Arm Motor | 12V DC geared motor |
-| Gripper Motor | 12V DC geared motor |
+| Drive Motors | 8 × 12V DC Geared Motors (paired configuration) |
+| Arm Motor | 12V DC Geared Motor |
+| Gripper Motor | 12V DC Geared Motor |
 | Battery | 3S LiPo |
-| User Interface | Push button and status LED |
+| User Interface | Push Button and Status LED |
 
 ---
 
-## Project Images
+## Project Gallery
 
 ### Complete Bot
 
@@ -78,31 +80,59 @@ If receiver communication is lost for more than 500 ms, the failsafe immediately
 
 ---
 
-## Repository Structure
+## Receiver Channel Assignment
 
-```
-Farm-Track
-│
-├── README.md
-├── LICENSE
-├── CONNECTIONS.md
-│
-├── V1
-│   ├── Images
-│   └── Documentation
-│
-├── V2
-│   ├── Images
-│   └── Documentation
-│
-└── V3
-    ├── FarmTrack_V3.ino
-    ├── README.md
-    ├── Images
-    └── Documentation
-```
+The controller reads six PWM channels from the FlySky receiver using the following mapping.
+
+| Receiver Channel | Arduino Pin | Transmitter Control | Function |
+|------------------|-------------|---------------------|----------|
+| CH1 | A0 | VR-B | Auxiliary Control |
+| CH2 | A1 | VR-A | Auxiliary Control |
+| CH3 | A2 | Left Stick (Horizontal) | Steering |
+| CH4 | A3 | Left Stick (Vertical) | Throttle |
+| CH5 | A4 | Right Stick (Vertical) | Arm |
+| CH6 | A5 | Right Stick (Horizontal) | Gripper |
 
 ---
+
+---
+
+## Control Architecture
+
+The following diagram shows the high-level control architecture of FarmTrack V3.
+
+```mermaid
+flowchart TD
+
+    TX["FlySky CT6B<br/>Transmitter"]
+    RX["FS-iA6B<br/>Receiver"]
+
+    ARD["Arduino Uno"]
+
+    BTS1["BTS7960<br/>Left Drive"]
+    BTS2["BTS7960<br/>Right Drive"]
+
+    L298["L298N<br/>Arm & Gripper"]
+
+    LEFT["Left Drive Motors"]
+    RIGHT["Right Drive Motors"]
+
+    ARM["Arm Motor"]
+    GRIP["Gripper Motor"]
+
+    TX --> RX
+    RX --> ARD
+
+    ARD --> BTS1
+    ARD --> BTS2
+    ARD --> L298
+
+    BTS1 --> LEFT
+    BTS2 --> RIGHT
+
+    L298 --> ARM
+    L298 --> GRIP
+```
 
 ## Future Improvements
 

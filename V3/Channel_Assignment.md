@@ -1,12 +1,12 @@
-CH1: VR-B
-CH2: VR- A
-CH3: LEFT-HORIZONTAL
-CH4: LEFT-VERTICAL
-CH5: RIGHT-VERTICAL
-CH6: RIGHT-HORIZONTAL
-#define CH1 A0
-#define CH2 A1
-#define CH3 A2
-#define CH4 A3
-#define CH5 A4
-#define CH6 A5
+## Receiver Channel Assignment
+
+The controller reads six PWM channels from the FlySky receiver. The channel mapping used in this project is shown below.
+
+| Receiver Channel | Arduino Pin | Transmitter Control | Function |
+|------------------|-------------|---------------------|----------|
+| CH1 | A0 | VR-B | Auxiliary control |
+| CH2 | A1 | VR-A | Auxiliary control |
+| CH3 | A2 | Left Stick (Horizontal) | Steering |
+| CH4 | A3 | Left Stick (Vertical) | Throttle |
+| CH5 | A4 | Right Stick (Vertical) | Arm |
+| CH6 | A5 | Right Stick (Horizontal) | Gripper |
